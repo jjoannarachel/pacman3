@@ -538,6 +538,7 @@ function restart(timeout) {
   movePlayerToDefaultPosition();
   setTimeout(() => {
     ready.innerHTML = 'YOU LOST A LIFE';
+    ready.style.display = 'block';
     document.getElementById("ready").style.display = 'none';
     document.querySelectorAll('[ghost]')
       .forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
