@@ -537,7 +537,7 @@ function renderLife(cnt) {
 function restart(timeout) {
   movePlayerToDefaultPosition();
   setTimeout(() => {
-    document.getElementById("ready").style.display = 'none';
+    document.getElementById("ready").style.display = 'YOU LOST A LIFE';
     document.querySelectorAll('[ghost]')
       .forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
     dead = false;
