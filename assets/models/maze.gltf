@@ -80,9 +80,9 @@
             "name" : "SVGMat",
             "pbrMetallicRoughness" : {
                 "baseColorFactor" : [
-                    0.005721994210034609,
-                    0.5097545981407166,
-                    1.0,
+                    0.0,
+                    0.0,
+                    128.0,
                     1.0
                 ],
                 "metallicFactor" : 0.0
