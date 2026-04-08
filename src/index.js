@@ -186,6 +186,7 @@ AFRAME.registerComponent('maze', {
     document.getElementById("logo").style.display = 'none';
     document.getElementById("start").style.display = 'none';
     document.getElementById("gameover").style.display = 'none';
+    document.getElementById("ready").innerHTML = 'READY';
     document.getElementById("ready").style.display = 'block';
 
     score = 0;
@@ -544,6 +545,7 @@ function restart(timeout, lostLife = false) {
         document.getElementById("ready").style.display = 'none';
       }, 1500);
     } else {   
+      document.getElementById("ready").innerHTML = 'READY';
       document.getElementById("ready").style.display = 'none';
     }
     document.querySelectorAll('[ghost]')
