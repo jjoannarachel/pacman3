@@ -402,7 +402,7 @@ AFRAME.registerComponent('player', {
       // Restart
       if(lifeCnt > 0) {
         player.removeChild(animation);
-        restart(1500);
+        restart(1500, true);
       } else 
         this.onGameOver(false);
     }, 1000);
@@ -534,12 +534,18 @@ function renderLife(cnt) {
   }
 }
 
-function restart(timeout) {
+function restart(timeout, lostLife = false) {
   movePlayerToDefaultPosition();
   setTimeout(() => {
-    ready.innerHTML = 'YOU LOST A LIFE';
-    ready.style.display = 'block';
-    document.getElementById("ready").style.display = 'none';
+    if (lostLife) {
+      document.getElementById("ready").innerHTML = 'YOU LOST A LIFE';
+      document.getElementById("ready").style.display = 'block';
+      setTimeout(() => {
+        document.getElementById("ready").style.display = 'none';
+      }, 1500);
+    } else {   
+      document.getElementById("ready").style.display = 'none';
+    }
     document.querySelectorAll('[ghost]')
       .forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
     dead = false;
