@@ -44,6 +44,7 @@ let highScore;
 let score = 0;
 let pillCnt = 0;
 let soundCtrl = true;
+let level = 1;
 
 const siren = new Howl({
   src: ['assets/sounds/siren.mp3'],
@@ -190,6 +191,7 @@ AFRAME.registerComponent('maze', {
     document.getElementById("ready").style.display = 'block';
 
     score = 0;
+    level = 1;
     document.querySelector('#score').setAttribute('text', {
       'value': score
     });
@@ -239,6 +241,7 @@ AFRAME.registerComponent('player', {
   updatePlayerDest: function (x, y, z) {
     let camera = document.querySelector("a-camera");
     let angle = camera.getAttribute("rotation");
+    console.log('angle.y:', angle.y, 'x:', x, 'z:', z);
 
     let _z = step * Math.cos(angle.y * Math.PI / 180);
     let _x = step * Math.sin(angle.y * Math.PI / 180);
@@ -379,7 +382,29 @@ AFRAME.registerComponent('player', {
   },
   onWin: function () {
     this.stop();
-    this.onGameOver(true);
+    level++;
+
+    document.querySelectorAll('[ghost]')
+      .forEach(p => p.setAttribute('visible', true));
+    pCnt = totalP;
+
+    document.querySelectorAll('[pellet]')
+      .forEach(p => p.setAttribute('visible', true));
+    pCnt = totalP;
+
+    siren.stop();
+    waza.stop();
+    ghostEaten.stop();
+
+    document.getElementById("ready").innerHTML = `LEVEL ${level}`;
+    document.getElementById("ready").style.display = 'block';
+
+    score = 0;
+    document.querySelector('#score').setAttribute('text', {
+      'value': score
+    });
+    
+    restart(3000, false, true);
   },
   onDie: function () {
     die.play();
@@ -460,7 +485,7 @@ AFRAME.registerComponent('ghost', {
       setOpacity(el, 1);
       updateGhostColor(el.object3D, el.defaultColor);
       el.setAttribute('nav-agent', {
-        speed: gNormSpeed
+        speed: gNormSpeed + (level - 1) * 0.2
       });
     }
     let p = Math.floor(Math.random() * intersections.length);
@@ -514,8 +539,18 @@ function enableCamera() {
   const camera = document.querySelector("a-camera");
   camera.removeAttribute('look-controls');
   camera.setAttribute('look-controls', {
-    'pointerLockEnabled': true
+    'enabled': true,
+    'pointerLockEnabled': false
   });
+
+  setTimeout(() => {
+    const lc = camera.components['look-controls'];
+    if (lc) {
+      lc.pitchObject.rotation.y = 0;
+      lc.yawObject.rotation.x = 0;
+    }
+    camera.setAttribute('rotation', '0 0 0');
+  }, 100);
 }
 
 function updateLife() {  
@@ -535,7 +570,7 @@ function renderLife(cnt) {
   }
 }
 
-function restart(timeout, lostLife = false) {
+function restart(timeout, lostLife = false, newLevel = false) {
   movePlayerToDefaultPosition();
   setTimeout(() => {
     if (lostLife) {
@@ -551,7 +586,9 @@ function restart(timeout, lostLife = false) {
     document.querySelectorAll('[ghost]')
       .forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
     dead = false;
-    updateLife();
+    if (!newLevel) {
+      updateLife();
+    };
     enableCamera();
   }, timeout);    
 }
