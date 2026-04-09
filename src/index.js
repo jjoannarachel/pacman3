@@ -48,7 +48,7 @@ let level = 1;
 let paused = false;
 
 const speedIncrease = 1.4;
-const speedDecrease = 0.5;
+const speedDecrease = 0.7;
 const basePlayerSpeed = 1.0;
 
 const siren = new Howl({
@@ -91,6 +91,19 @@ AFRAME.registerComponent('maze', {
       document.querySelector('#highscore').setAttribute('text', {
         'value': highScore
       });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !dead) { // Only pause if the game is actually running
+            paused = !paused;
+            if (paused) {
+                // We use the player component to trigger the UI
+                document.querySelector('[player]').components.player.onPause();
+            } else {
+                // Resume logic
+                this.start(); // Reuse start logic to hide UI and resume
+            }
+        }
+    });
     });
   },
   initLife: function () {
@@ -187,6 +200,7 @@ AFRAME.registerComponent('maze', {
     }
   },
   start: function () {
+    paused = false;
     this.initLife();
     document.querySelectorAll('[pellet]')
       .forEach(p => p.setAttribute('visible', true));
@@ -197,10 +211,21 @@ AFRAME.registerComponent('maze', {
     document.getElementById("gameover").style.display = 'none';
     document.getElementById("ready").innerHTML = 'READY';
     document.getElementById("ready").style.display = 'block';
+    if (document.getElementById("paused")) {
+      document.getElementById("paused").style.display = 'none';
+  }
 
     score = 0;
     level = 1;
     document.querySelector('#score').setAttribute('text', { 'value': score });
+
+    if(document.getElementById("paused")) {
+      document.getElementById("paused").style.display = 'none';
+    }
+    
+    document.querySelectorAll('[ghost]').forEach(ghost => {
+        ghost.setAttribute('nav-agent', { active: true });
+    });
 
     ready.play();
     restart(3000);
@@ -218,7 +243,7 @@ AFRAME.registerComponent('player', {
     this.nextBg = siren;
   },
   tick: function () {
-    if (!dead && path.length >= row){
+    if (!dead && !paused && path.length >= row){
       this.nextBg = siren;
       let position = this.el.getAttribute('position');
       let x = position.x;
@@ -237,6 +262,8 @@ AFRAME.registerComponent('player', {
         this.nextBg.play();
         this.currentBg = this.nextBg;
       } 
+    } else if (paused) {
+      if (this.currentBg) this.currentBg.stop();
     }
   },
   updatePlayerDest: function (x, y, z) {
@@ -302,6 +329,27 @@ AFRAME.registerComponent('player', {
     gameoverEl.style.display = 'block';
     let startEl = document.getElementById("start");
     startEl.innerHTML = 'RESTART';
+    startEl.style.display = 'block';
+  },
+  onPause: function (win) {
+    this.nextBg = undefined;
+    siren.stop();
+    waza.stop();
+    ghostEaten.stop();
+
+    this.ghosts.forEach(ghost => {
+        ghost.setAttribute('nav-agent', { active: false });
+    });
+
+    let pausedEl = document.getElementById("paused");
+
+    if (pausedEl){
+      pausedEl.innerHTML = 'PAUSED';
+      pausedEl.style.display = 'block';
+    }
+    
+    let startEl = document.getElementById("start");
+    startEl.innerHTML = 'CONTINUE';
     startEl.style.display = 'block';
   },
   onCollideWithGhost: function (ghost, x, z, i) {
