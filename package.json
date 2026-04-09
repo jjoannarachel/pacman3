@@ -19,6 +19,7 @@
     "babel-preset-env": "^1.7.0",
     "file-loader": "^3.0.1",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.3.0",
     "webpack": "^4.21.0",
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.9"
@@ -32,8 +33,13 @@
   },
   "jest": {
     "collectCoverage": true,
-    "collectCoverageFrom": ["src/**/*.js"],
-    "coverageReporters": ["text", "lcov"],
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
     "testEnvironment": "node",
     "transform": {
       "^.+\\.js$": "babel-jest"
