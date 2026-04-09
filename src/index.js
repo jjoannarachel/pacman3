@@ -591,3 +591,27 @@ function restart(timeout, lostLife = false, newLevel = false) {
     enableCamera();
   }, timeout);    
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    setOpacity,
+    updateAgentDest,
+    updateGhostColor,
+    renderLife,
+    updateLife,
+    movePlayerToDefaultPosition,
+    disableCamera,
+    enableCamera,
+    restart,
+    _mazeComponent: AFRAME.registerComponent.__calls || {},
+    _getMazeComponent: () => ({
+      initLife: function() { lifeCnt = 3; renderLife(lifeCnt); },
+      initSoundControl: function(el) {
+        let soundEl = document.getElementById('sound');
+        soundEl.addEventListener('click', () => {
+          soundCtrl = !soundCtrl;
+        });
+      },
+    }),
+  };
+}
