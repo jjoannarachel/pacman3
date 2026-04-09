@@ -47,6 +47,10 @@ let soundCtrl = true;
 let level = 1;
 let paused = false;
 
+const speedIncrease = 1.4;
+const speedDecrease = 0.5;
+const basePlayerSpeed = 1.0;
+
 const siren = new Howl({
   src: ['assets/sounds/siren.mp3'],
   loop: true
@@ -82,7 +86,6 @@ AFRAME.registerComponent('maze', {
       this.initScene();
       this.initStartButton();
 
-      // Cached high score
       let hs = localStorage.getItem('highscore');
       highScore = hs? parseInt(hs): 0;
       document.querySelector('#highscore').setAttribute('text', {
@@ -112,9 +115,7 @@ AFRAME.registerComponent('maze', {
     });
   },
   initScene: function () {
-    // Set opacity of the wall
     setOpacity(this.el, 0.75);
-
     let sceneEl = this.el.sceneEl;
     let cnt = 0;
     let line = [];
@@ -133,33 +134,40 @@ AFRAME.registerComponent('maze', {
       document.getElementById('github').style.display = 'block';
     });
 
-    // Create pellets and power pills
     for (let i = 0; i < maze.length; i++) {
       let x = startX + i %  col * step; 
       let z = startZ + Math.floor(i / col) * step;
       if (maze[i] >= P.PELLET) {
         pCnt++;
-
         let sphere = document.createElement('a-sphere');
-        sphere.setAttribute('color', pColor);
-        sphere.setAttribute('radius', radius * maze[i]);
-        sphere.setAttribute('position', `${x} ${y} ${z}`);
-        sphere.setAttribute('id', `p${i}`);
-        sphere.setAttribute('pellet', '');
         
+        let pillColor = pColor;
+        let type = 'normal';
+
         if (maze[i] >= P.POWERPILL) {
+          let isFast = Math.random() > 0.5;
+          type = isFast ? 'fast' : 'slow';
+          pillColor = isFast ? 'green' : 'red';
+
           let animation = document.createElement('a-animation');
           animation.setAttribute("attribute", "material.color");
-          animation.setAttribute("from", pColor);
+          animation.setAttribute("from", pillColor);
           animation.setAttribute("to", "white");
           animation.setAttribute("dur","500");
           animation.setAttribute("repeat","indefinite");
           sphere.appendChild(animation);
         }
+
+        sphere.setAttribute('color', pillColor);
+        sphere.setAttribute('radius', radius * maze[i]);
+        sphere.setAttribute('position', `${x} ${y} ${z}`);
+        sphere.setAttribute('id', `p${i}`);
+        sphere.setAttribute('data-type', type); 
+        sphere.setAttribute('pellet', '');
+        
         sceneEl.appendChild(sphere);
       }
       
-      // Store positions in path
       line.push(maze[i] >= 0 ? [x, y, z, maze[i] > 0 ? i : P.WALL, maze[i]] : []); 
       cnt++;    
       if (cnt > (col - 1)) {
@@ -180,7 +188,6 @@ AFRAME.registerComponent('maze', {
   },
   start: function () {
     this.initLife();
-
     document.querySelectorAll('[pellet]')
       .forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
@@ -193,9 +200,7 @@ AFRAME.registerComponent('maze', {
 
     score = 0;
     level = 1;
-    document.querySelector('#score').setAttribute('text', {
-      'value': score
-    });
+    document.querySelector('#score').setAttribute('text', { 'value': score });
 
     ready.play();
     restart(3000);
@@ -215,7 +220,6 @@ AFRAME.registerComponent('player', {
   tick: function () {
     if (!dead && path.length >= row){
       this.nextBg = siren;
-
       let position = this.el.getAttribute('position');
       let x = position.x;
       let y = position.y;
@@ -226,12 +230,8 @@ AFRAME.registerComponent('player', {
       this.updateGhosts(x, z);
       this.updateMode(position);
       
-      // Update score
-      document.querySelector('#score').setAttribute('text', {
-        value: score
-      });
+      document.querySelector('#score').setAttribute('text', { value: score });
 
-      // Update background sound
       if (this.nextBg && this.currentBg != this.nextBg) {
         this.currentBg.stop();
         this.nextBg.play();
@@ -242,7 +242,6 @@ AFRAME.registerComponent('player', {
   updatePlayerDest: function (x, y, z) {
     let camera = document.querySelector("a-camera");
     let angle = camera.getAttribute("rotation");
-
     let _z = step * Math.cos(angle.y * Math.PI / 180);
     let _x = step * Math.sin(angle.y * Math.PI / 180);
     let z_ = Math.round((z - _z - startZ)/step);
@@ -250,7 +249,7 @@ AFRAME.registerComponent('player', {
     let i = z_ > row - 1 ? row - 1: z_ < 0 ? 0 : z_;
     let j = x_ > col - 1 ? col - 1 : x_ < 0 ? 0 : x_;
 
-    if (i === 13 && j === 0) // Tunnel
+    if (i === 13 && j === 0) 
       this.el.object3D.position.set(path[13][24][0], y, path[13][24][2]);
     else if (i === 13 && j === 25)
       this.el.object3D.position.set(path[13][1][0], y, path[13][1][2]);
@@ -264,19 +263,14 @@ AFRAME.registerComponent('player', {
     let ghosts = this.ghosts;
     for (var i = 0; i < ghosts.length; i++) {
       if (ghosts[i].dead) this.nextBg = ghostEaten;
-
       this.onCollideWithGhost(ghosts[i], x, z, i);
-
       if (ghosts[i].slow) {
-        if (pillCnt === 1) { // Leave pill mode
+        if (pillCnt === 1) { 
           updateGhostColor(ghosts[i].object3D, ghosts[i].defaultColor);
-
           ghosts[i].slow = false;
-          ghosts[i].setAttribute('nav-agent', {
-            speed: gNormSpeed
-          });
+          ghosts[i].setAttribute('nav-agent', { speed: gNormSpeed });
         } else if (pillCnt > 1) {
-          if (pillCnt < flashDuration && pillCnt % 2 === 0) // Flash
+          if (pillCnt < flashDuration && pillCnt % 2 === 0) 
             updateGhostColor(ghosts[i].object3D, 0xFFFFFF);
           else
             updateGhostColor(ghosts[i].object3D, gColor);
@@ -290,7 +284,6 @@ AFRAME.registerComponent('player', {
       pillCnt--;
       if (this.nextBg != ghostEaten) this.nextBg = waza;
     } else {
-      // Scatter and chase
       this.waveCnt = this.waveCnt > (chaseDuration + scatterDuration) ? 0: this.waveCnt + 1;
       if (this.waveCnt > scatterDuration) 
         targetPos = position;
@@ -301,17 +294,12 @@ AFRAME.registerComponent('player', {
     siren.stop();
     waza.stop();
     ghostEaten.stop();
-    
     this.el.sceneEl.exitVR();
-
     let gameoverEl = document.getElementById("gameover");
     gameoverEl.innerHTML = win ? 'YOU WIN' : 'GAME OVER';
-    if (win) 
-      gameoverEl.classList.add("blink");
-    else
-      gameoverEl.classList.remove("blink");
+    if (win) gameoverEl.classList.add("blink");
+    else gameoverEl.classList.remove("blink");
     gameoverEl.style.display = 'block';
-
     let startEl = document.getElementById("start");
     startEl.innerHTML = 'RESTART';
     startEl.style.display = 'block';
@@ -319,23 +307,15 @@ AFRAME.registerComponent('player', {
   onCollideWithGhost: function (ghost, x, z, i) {
     let ghostX = ghost.getAttribute('position').x;
     let ghostZ = ghost.getAttribute('position').z;
-
     if (Math.abs(ghostX - x) < gCollideDist && Math.abs(ghostZ - z) < gCollideDist) {
       if (!ghost.dead){
         if (ghost.slow) {
           eatGhost.play();
-
           this.hitGhosts.push(i);
           ghost.dead = true;
           ghost.slow = false;
-
-          // Move to ghost house
-          ghost.setAttribute('nav-agent', {
-            active: false,
-            speed: gFastSpeed,
-          });
+          ghost.setAttribute('nav-agent', { active: false, speed: gFastSpeed });
           updateAgentDest(ghost, ghost.defaultPos);
-
           setOpacity(ghost, 0.3);
           score += ghostScore * this.hitGhosts.length;
         } else {
@@ -356,10 +336,17 @@ AFRAME.registerComponent('player', {
         pCnt--;
         pellet.setAttribute('visible', false);
 
-        // Power pill
         if (currentP[4] >= P.POWERPILL) {
           eatPill.play();
           score += pillScore;
+
+          // Apply Speed Effect
+          let type = pellet.getAttribute('data-type');
+          let agent = this.el.getAttribute('nav-agent');
+          let currentSpeed = agent ? agent.speed : basePlayerSpeed;
+          let newSpeed = type === 'fast' ? currentSpeed * speedIncrease : currentSpeed * speedDecrease;
+
+          this.el.setAttribute('nav-agent', { speed: newSpeed });
           this.onEatPill();
         } else {
           eating.play();
@@ -375,47 +362,30 @@ AFRAME.registerComponent('player', {
     this.ghosts.forEach(ghost => {
       updateGhostColor(ghost.object3D, gColor);
       ghost.slow = true;
-      ghost.setAttribute('nav-agent', {
-        speed: gSlowSpeed
-      });
+      ghost.setAttribute('nav-agent', { speed: gSlowSpeed });
     });
   },
   onWin: function () {
     this.stop();
     level++;
-
-    document.querySelectorAll('[ghost]')
-      .forEach(p => p.setAttribute('visible', true));
+    document.querySelectorAll('[ghost]').forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
-
-    document.querySelectorAll('[pellet]')
-      .forEach(p => p.setAttribute('visible', true));
+    document.querySelectorAll('[pellet]').forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
-
     siren.stop();
     waza.stop();
     ghostEaten.stop();
-
     document.getElementById("ready").innerHTML = `LEVEL ${level}`;
     document.getElementById("ready").style.display = 'block';
-
     score = 0;
-    document.querySelector('#score').setAttribute('text', {
-      'value': score
-    });
-    
+    document.querySelector('#score').setAttribute('text', { 'value': score });
     restart(3000, false, true);
   },
   onDie: function () {
     die.play();
-
     this.stop();
-
-    // Rotate replayer
     let player = this.player;
-    player.setAttribute('nav-agent', {
-      active: false
-    });
+    player.setAttribute('nav-agent', { active: false });
     let animation = document.createElement('a-animation');
     animation.setAttribute("attribute","rotation");
     animation.setAttribute("to", "0 720 0");
@@ -425,7 +395,6 @@ AFRAME.registerComponent('player', {
     player.appendChild(animation);
 
     setTimeout(() => {
-      // Restart
       if(lifeCnt > 0) {
         player.removeChild(animation);
         restart(1500, true);
@@ -438,25 +407,14 @@ AFRAME.registerComponent('player', {
     dead = true;
     pillCnt = 0;
     this.waveCnt = 0;
-
-    // Update score
     if (score > highScore) {
       highScore = score;
-      document.querySelector('#highscore').setAttribute('text', {
-        'value': highScore
-      });
+      document.querySelector('#highscore').setAttribute('text', { 'value': highScore });
       localStorage.setItem('highscore', highScore);
     }
-
-    // Stop ghosts
     this.ghosts.forEach(ghost => {
-      ghost.setAttribute('nav-agent', {
-        active: false,
-        speed: gNormSpeed
-      });
+      ghost.setAttribute('nav-agent', { active: false, speed: gNormSpeed });
     });
-
-    // Move ghosts to ghost house
     this.ghosts.forEach(ghost => {
       ghost.dead = false;
       ghost.slow = false;
@@ -464,6 +422,8 @@ AFRAME.registerComponent('player', {
       setOpacity(ghost, 1);
       ghost.object3D.position.set(ghost.defaultPos.x, ghost.defaultPos.y, ghost.defaultPos.z);
     });
+    // Reset player speed on stop/death
+    this.el.setAttribute('nav-agent', { speed: basePlayerSpeed });
   }
 });
 
@@ -484,9 +444,7 @@ AFRAME.registerComponent('ghost', {
       el.slow = false;
       setOpacity(el, 1);
       updateGhostColor(el.object3D, el.defaultColor);
-      el.setAttribute('nav-agent', {
-        speed: gNormSpeed + (level - 1) * 0.2
-      });
+      el.setAttribute('nav-agent', { speed: gNormSpeed + (level - 1) * 0.2 });
     }
     let p = Math.floor(Math.random() * intersections.length);
     let x = startX + intersections[p][0] * step; 
@@ -508,10 +466,7 @@ function setOpacity(object, opacity) {
 }
 
 function updateAgentDest(object, dest) {
-  object.setAttribute('nav-agent', {
-    active: true,
-    destination: dest
-  });
+  object.setAttribute('nav-agent', { active: true, destination: dest });
 }
 
 function updateGhostColor(ghost, color) {
@@ -530,18 +485,13 @@ function movePlayerToDefaultPosition() {
 function disableCamera() {
   const camera = document.querySelector("a-camera");
   camera.removeAttribute('look-controls');
-  camera.setAttribute('look-controls', {
-    'enabled': false
-  });
+  camera.setAttribute('look-controls', { 'enabled': false });
 }
 
 function enableCamera() {
   const camera = document.querySelector("a-camera");
   camera.removeAttribute('look-controls');
-  camera.setAttribute('look-controls', {
-    'pointerLockEnabled': true,
-  });
-
+  camera.setAttribute('look-controls', { 'pointerLockEnabled': true });
   setTimeout(() => {
     const lc = camera.components['look-controls'];
     if (lc) {
@@ -575,42 +525,27 @@ function restart(timeout, lostLife = false, newLevel = false) {
     if (lostLife) {
       document.getElementById("ready").innerHTML = 'YOU LOST A LIFE';
       document.getElementById("ready").style.display = 'block';
-      setTimeout(() => {
-        document.getElementById("ready").style.display = 'none';
-      }, 1500);
+      setTimeout(() => { document.getElementById("ready").style.display = 'none'; }, 1500);
     } else {   
       document.getElementById("ready").innerHTML = 'READY';
       document.getElementById("ready").style.display = 'none';
     }
-    document.querySelectorAll('[ghost]')
-      .forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
+    document.querySelectorAll('[ghost]').forEach(ghost => updateAgentDest(ghost, ghost.defaultPos));
     dead = false;
-    if (!newLevel) {
-      updateLife();
-    };
+    if (!newLevel) { updateLife(); };
     enableCamera();
   }, timeout);    
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    setOpacity,
-    updateAgentDest,
-    updateGhostColor,
-    renderLife,
-    updateLife,
-    movePlayerToDefaultPosition,
-    disableCamera,
-    enableCamera,
-    restart,
+    setOpacity, updateAgentDest, updateGhostColor, renderLife, updateLife, movePlayerToDefaultPosition, disableCamera, enableCamera, restart,
     _mazeComponent: AFRAME.registerComponent.__calls || {},
     _getMazeComponent: () => ({
       initLife: function() { lifeCnt = 3; renderLife(lifeCnt); },
       initSoundControl: function(el) {
         let soundEl = document.getElementById('sound');
-        soundEl.addEventListener('click', () => {
-          soundCtrl = !soundCtrl;
-        });
+        soundEl.addEventListener('click', () => { soundCtrl = !soundCtrl; });
       },
     }),
   };
