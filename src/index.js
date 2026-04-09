@@ -93,15 +93,21 @@ AFRAME.registerComponent('maze', {
       });
 
       window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !dead) { // Only pause if the game is actually running
+        if (e.code === 'Space' && !dead) {
             paused = !paused;
             if (paused) {
-                // We use the player component to trigger the UI
                 document.querySelector('[player]').components.player.onPause();
             } else {
-                // Resume logic
-                this.start(); // Reuse start logic to hide UI and resume
-            }
+              paused = false;
+              if(document.getElementById("paused")) document.getElementById("paused").style.display = 'none';
+              if(document.getElementById("start")) document.getElementById("start").style.display = 'none';
+
+              document.querySelectorAll('[ghost]').forEach(ghost => {
+                ghost.setAttribute('nav-agent', { active: true });
+              });
+
+              siren.play();
+            }     
         }
     });
     });
