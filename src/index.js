@@ -45,6 +45,7 @@ let score = 0;
 let pillCnt = 0;
 let soundCtrl = true;
 let level = 1;
+let paused = false;
 
 const siren = new Howl({
   src: ['assets/sounds/siren.mp3'],
@@ -241,7 +242,6 @@ AFRAME.registerComponent('player', {
   updatePlayerDest: function (x, y, z) {
     let camera = document.querySelector("a-camera");
     let angle = camera.getAttribute("rotation");
-    console.log('angle.y:', angle.y, 'x:', x, 'z:', z);
 
     let _z = step * Math.cos(angle.y * Math.PI / 180);
     let _x = step * Math.sin(angle.y * Math.PI / 180);
@@ -539,15 +539,14 @@ function enableCamera() {
   const camera = document.querySelector("a-camera");
   camera.removeAttribute('look-controls');
   camera.setAttribute('look-controls', {
-    'enabled': true,
-    'pointerLockEnabled': false
+    'pointerLockEnabled': true,
   });
 
   setTimeout(() => {
     const lc = camera.components['look-controls'];
     if (lc) {
-      lc.pitchObject.rotation.y = 0;
-      lc.yawObject.rotation.x = 0;
+      lc.pitchObject.rotation.x = 0;
+      lc.yawObject.rotation.y = 0;
     }
     camera.setAttribute('rotation', '0 0 0');
   }, 100);
