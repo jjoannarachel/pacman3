@@ -93,20 +93,42 @@ AFRAME.registerComponent('maze', {
       });
 
       window.addEventListener('keydown', (e) => {
+        // Execute toggle only if the Spacebar is pressed and the game isn't in a 'Game Over' state
         if (e.code === 'Space' && !dead) {
+            
+            // Flip the global pause boolean
             paused = !paused;
+    
             if (paused) {
+                /** * PAUSE STATE:
+                 * Access the 'player' entity and invoke its custom onPause method.
+                 * This typically stops player animations, movement and input processing.
+                 */
                 document.querySelector('[player]').components.player.onPause();
             } else {
-              paused = false;
-              if(document.getElementById("paused")) document.getElementById("paused").style.display = 'none';
-              if(document.getElementById("start")) document.getElementById("start").style.display = 'none';
-
-              document.querySelectorAll('[ghost]').forEach(ghost => {
-                ghost.setAttribute('nav-agent', { active: true });
-              });
-
-              siren.play();
+                /**
+                 * RESUME STATE:
+                 * 1. Force pause state to false (Redundant but ensures state integrity).
+                 * 2. Hide UI Overlay elements (Pause menu and Start screen) by modifying CSS styles.
+                 */
+                paused = false;
+                if(document.getElementById("paused")) document.getElementById("paused").style.display = 'none';
+                if(document.getElementById("start")) document.getElementById("start").style.display = 'none';
+    
+                /**
+                 * 3. AI Restoration:
+                 * Iterate through all ghost entities and reactivate their navigation agents.
+                 * This allows the nav-mesh pathfinding to resume ghost movement.
+                 */
+                document.querySelectorAll('[ghost]').forEach(ghost => {
+                    ghost.setAttribute('nav-agent', { active: true });
+                });
+    
+                /**
+                 * 4. Audio Feedback:
+                 * Restart the primary game siren looping sound.
+                 */
+                siren.play();
             }     
         }
     });
